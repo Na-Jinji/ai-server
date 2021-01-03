@@ -7,6 +7,7 @@ from sklearn.metrics.pairwise import linear_kernel
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
+# 임시 모델, 나중에 추가예정
 seoul_data = pd.read_csv('model\seoul_attractions.csv')
 
 metaData = seoul_data[['분류', '고유번호', '상호명', 'TAG']].drop_duplicates()

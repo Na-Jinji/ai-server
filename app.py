@@ -11,8 +11,8 @@ def index():
 
 @app.route('/userLogin', methods=['POST'])
 def userLogin():
-    user = request.get_json()#json 데이터를 받아온다.
-    return jsonify(user)#받아온 데이터를 다시 전송한다.
+    user = request.get_json()   # json 데이터를 받아온다.
+    return jsonify(user)    # 받아온 데이터를 다시 전송한다.
 
 @app.route('/environments/<language>')
 def environments(language):
@@ -21,7 +21,7 @@ def environments(language):
 @app.route('/recommender', methods=['POST'])
 def make_recommendation():
     if request.method == 'POST':
-        landmark = request.get_json()#json 데이터를 받는다.
+        landmark = request.get_json()   # json 데이터를 받는다.
         if 'name' in landmark.keys():
             result = model.return_recommendations(landmark['name']).tolist()
             return jsonify({"recommended_landmarks": result})
