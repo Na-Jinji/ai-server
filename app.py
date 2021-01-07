@@ -26,8 +26,8 @@ def make_recommendation():
             result = model.return_recommendations(landmark['name']).tolist()
             return jsonify({"recommended_landmarks": result})
         else:
-            return render_template('recommender.html',label="wrong data type")
+            return render_template('recommender.html', label="wrong data type")
 
 
 if __name__ == '__main__':
-    app.run(debug=False, host='0.0.0.0')
+    app.run(debug=True)
