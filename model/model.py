@@ -2,76 +2,73 @@
 # coding: utf-8
 import pandas as pd
 import numpy as np
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics.pairwise import linear_kernel
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
-# 서울 데이터 예시
-seoul_data = pd.read_csv('model\seoul_attractions.csv')
 
-metaData = seoul_data[['분류', '고유번호', '상호명', 'TAG']].drop_duplicates()
-metaData.columns = ['category', 'id', 'name', 'tag']
-metaData['tag'] = metaData['tag'].map(lambda x: x.replace(',', ' '))
-
-# Content-Based Recommender - TAG 기반 추천
-# TF-IDF
-tfidf = TfidfVectorizer(max_features=100, max_df=0.95, min_df=0)
-tfidf_matrix = tfidf.fit_transform(metaData['tag'])
-
-# 코사인유사도
-cosine_sim = linear_kernel(tfidf_matrix, tfidf_matrix)
-indices = pd.Series(metaData.index, index=metaData['name']).drop_duplicates()  # 이름, index
-
-
-def get_recommendations(name, cosine_sim=cosine_sim):
-
-
-    if not name in indices:
-        print('[ {} ]가 데이터셋에 없습니다 - KeyError'.format(name))
-        return None
-
-    idx = indices[name]
-    sim_scores = list(enumerate(cosine_sim[idx]))  # 유사도 측정
-    sim_scores = sorted(sim_scores, key=lambda x: x[1], reverse=True)  # 내림차순
-
-    sim_scores = sim_scores[1:12]
-    attraction_indices = [i[0] for i in sim_scores]
-
-    # name 값들 얻어오기
-    result = metaData[['name']].iloc[attraction_indices]
-    result = np.array(result.values.tolist())
-    result = np.delete(result, 1)  # 2차원 --> 1차원
-    return result
-
-
-### 카테고리, TAG를 고려한 CBF
 def create_soup(x):
     return x['category'] + ' ' + x['tag']
 
 
-metaData['soup'] = metaData.apply(create_soup, axis=1)
+class Model:
+    def __init__(self, tokenizer=None):
+        gyeongju_data = pd.read_csv('model/data.csv')
+        self.metaData = gyeongju_data[['category', 'title', 'tag']].drop_duplicates()
+        self.metaData['soup'] = self.metaData.apply(create_soup, axis=1)
 
-# TF-IDF 대신 CountVectorizer
-count = CountVectorizer()
-count_matrix = count.fit_transform(metaData['soup'])
+        # 이름:index - 예) 로라커피:0, 이스트앵글:1
+        self.indices = pd.Series(self.metaData.index, index=self.metaData['title']).drop_duplicates()
 
-# 코사인 유사도 구하기
-cosine_sim2 = cosine_similarity(count_matrix, count_matrix)
+        # BOW 인코딩
+        if tokenizer:
+            count = CountVectorizer(analyzer='word', tokenizer=tokenizer.morphs)
+        else:
+            count = CountVectorizer(analyzer='word')
+        count_matrix = count.fit_transform(self.metaData['soup'])
 
-# index 초기화
-metaData = metaData.reset_index()
-indices = pd.Series(metaData.index, index=metaData['name'])
+        # 코사인 유사도 구하기
+        self.cosine_sim2 = cosine_similarity(count_matrix, count_matrix)
 
+        # index 초기화
+        self.metaData = self.metaData.reset_index()
+        self.indices = pd.Series(self.metaData.index, index=self.metaData['title'])
 
-# target : 원하는 장소, recommendations : 추천장소 10개 list
-# target = "경복궁"
-# recommendations = get_recommendations(target, cosine_sim2)
-# print(recommendations)
-# print("size : ", len(recommendations))
+    # title의 정확한 명칭 얻어오기
+    def set_exact_title(self, t):
+        if t in self.indices:  # 정확한 명칭이면 통과
+            return t
+
+        df_title = self.metaData[self.metaData['title'].str.contains(t)]
+        values = df_title['title'].values
+        if len(values) <= 0:
+            return ''
+        return values[0]
+
+    # 10개의 추천리스트 가져오기
+    def get_recommendations(self, title):
+        title = self.set_exact_title(title)
+        if len(title) <= 0 or title == '':
+            return []
+
+        idx = self.indices[title]
+        sim_scores = list(enumerate(self.cosine_sim2[idx]))  # 유사도 측정
+        sim_scores = sorted(sim_scores, key=lambda x: x[1], reverse=True)  # 내림차순
+
+        sim_scores = sim_scores[1:11]
+        attraction_indices = [i[0] for i in sim_scores]     # 장소 index
+        scores = [i[1] for i in sim_scores]     # 유사도
+
+        # debug
+        for i in scores:
+            print(i)
+
+        result_data = self.metaData[['title', 'tag']].iloc[attraction_indices]
+        result_data['scores'] = np.array(scores)
+        return result_data['title'].values.tolist()
 
 
 def return_recommendations(target):
-    expected_recommendations = get_recommendations(target, cosine_sim2)
+    m = Model()
+    expected_recommendations = m.get_recommendations(target)
     return expected_recommendations
 
