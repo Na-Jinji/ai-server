@@ -54,7 +54,7 @@ class Model:
         sim_scores = list(enumerate(self.cosine_sim2[idx]))  # 유사도 측정
         sim_scores = sorted(sim_scores, key=lambda x: x[1], reverse=True)  # 내림차순
 
-        sim_scores = sim_scores[1:11]
+        sim_scores = sim_scores[1:6]  # 5개
         attraction_indices = [i[0] for i in sim_scores]     # 장소 index
         scores = [i[1] for i in sim_scores]     # 유사도
 
