@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request, jsonify
 from model import model
-from konlpy.tag import Kkma
+# from konlpy.tag import Kkma
 
 # kkma = Kkma()
 app = Flask(__name__)
