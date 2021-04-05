@@ -19,17 +19,26 @@ def userLogin():
 def environments(language):
     return jsonify({"language": language})
 
-@app.route('/recommender', methods=['POST'])
+@app.route('/recommender')
 def make_recommendation():
     # jpype.attachThreadToJVM()
 
     if request.method == 'POST':
-        landmark = request.get_json()   # json 데이터를 받는다.
+        landmark = request.get_json()  # json 데이터를 받는다.
+
         if 'name' in landmark.keys():
             result = model.return_recommendations(landmark['name'])
             return jsonify({"recommended_landmarks": result})
         else:
             return render_template('recommender.html', label="wrong data type")
+    else:
+        landmark = request.args.to_dict()
+        if len(landmark) == 0:
+            return 'No parameter'
+
+        if 'name' in landmark.keys():
+            result = model.return_recommendations(landmark['name'])
+            return jsonify({"recommended_landmarks": result})
 
 if __name__ == '__main__':
     app.run(debug=True)
